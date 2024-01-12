@@ -1,0 +1,46 @@
+Volgnummer;HaardID;Soort;Aard terrein;Bodem_ondergrond;Opp_m2_18;Opp_m2_2122;Interval_jaar;Beheer;beheer_extra;begrensd
+1;1;Bohemica;dijk;breuksteen;17,01;28,1;3;nulbeheer;opengekapt;1
+2;2;Japonica;dijk;breuksteen;4,93;15;3;nulbeheer;rand gemaaid;1
+3;3;Japonica;dijk;zandleem;16;23,49;3;nulbeheer;rand gemaaid;2
+4;4;Japonica;dijk;zandleem;117,57;127,75;3;nulbeheer;rand gemaaid;2
+5;5;Japonica;dijk;zandleem;262,59;244,74;3;nulbeheer;nulbeheer;1
+6;6;Japonica;dijk;zandleem;59,67;72,88;3;nulbeheer;nulbeheer;1
+7;7;Japonica;dijk;breuksteen;12,84;20,3;3;nulbeheer;nulbeheer;1
+8;8;Japonica;dijk;zandleem;192,54;194,04;3;nulbeheer;rand gemaaid;2
+9;9;Japonica;dijk;breuksteen;22,11;34,58;3;nulbeheer;nulbeheer;1
+10;10;Bohemica;oever;zandleem;323,72;361,87;3;nulbeheer;Ooit afgedekt;2
+11;11;Bohemica;grasland;zandleem;2,21;36,9;3;maaibeheer;jaarlijks;0
+12;12;Japonica;dijk;zandleem;9,18;25,95;3;maaibeheer;stootbegrazing schaapskudde;0
+13;13;Japonica;dijk;zandleem;6,04;33,97;3;maaibeheer;stootbegrazing schaapskudde;0
+14;14;Japonica;dijk;zandleem;0,3;2,98;3;nulbeheer;stootbegrazing schaapskudde;0
+15;15;Japonica;dijk;zandleem;0,2;0,79;3;nulbeheer;stootbegrazing schaapskudde;0
+16;16;Japonica;dijk;zandleem;1,15;5,89;3;nulbeheer;stootbegrazing schaapskudde;0
+17;18;Japonica;dijk;zandleem;1,7;9,97;3;nulbeheer;stootbegrazing schaapskudde;0
+18;19;Japonica;dijk;zandleem;0,2;3,89;3;nulbeheer;stootbegrazing schaapskudde;0
+19;26;Japonica;dijk;breuksteen;91,51;122,01;3;nulbeheer;rand gemaaid;2
+20;27;Japonica;dijk;breuksteen;45,7;55,64;3;nulbeheer;rand gemaaid;2
+21;28;Japonica;dijk;breuksteen;66,02;86,8;3;nulbeheer;rand gemaaid;2
+22;29;Japonica;dijk;breuksteen;127,4;173,38;3;nulbeheer;rand gemaaid;2
+23;30;Japonica;dijk;breuksteen;54,94;70,58;3;nulbeheer;rand gemaaid;2
+24;31;Japonica;dijk;zandleem;29,51;52,61;3;nulbeheer;stootbegrazing schaapskudde;0
+25;32;Japonica;dijk;breuksteen;283,78;352,92;3;nulbeheer;stootbegrazing schaapskudde;0
+26;33;Japonica;dijk;zandleem;57,17;94,45;3;nulbeheer;rand gemaaid;2
+27;34;Japonica;dijk;zandleem;53,38;65,5;3;nulbeheer;rand gemaaid;1
+28;35;Japonica;dijk;breuksteen;10,57;22,28;3;nulbeheer;rand gespaard;1
+29;36;Bohemica;dijk;breuksteen;230,29;292,19;3;nulbeheer;rand gemaaid;2
+30;37;Japonica;dijk;breuksteen;249,02;319,97;3;nulbeheer;rand gemaaid;2
+31;38;Japonica;dijk;breuksteen;147,44;190,38;3;nulbeheer;rand gemaaid;2
+32;39;Bohemica;natuur;zandleem;945,61;1292,83;3;nulbeheer;runderbegrazing;1
+33;41;Bohemica;oever;klei;28,13;117,95;3;maaibeheer;jaarlijks in de zomer gemaaid;0
+34;42;Japonica;oever;klei;10,32;13,24;3;maaibeheer;jaarlijks in de zomer gemaaid;0
+35;43;Japonica;oever;klei;18,9;38,72;3;maaibeheer;jaarlijks in de zomer gemaaid;0
+36;44;Japonica;oever;klei;23,03;19,28;3;maaibeheer;jaarlijks in de zomer gemaaid;0
+37;45;Japonica;dijk;zandleem;162,36;149,8;3;maaibeheer;stootbegrazing schaapskudde;0
+38;46;Japonica;dijk;zandleem;18,92;26,37;3;nulbeheer;rand gemaaid;2
+39;47;Bohemica;natuur;leem;73,72;75,52;4;maaibeheer;jaarlijks;0
+40;48;Bohemica;natuur;leem;20,03;29,73;4;maaibeheer;jaarlijks;0
+41;49;Bohemica;dijk;zandleem;20,47;37,54;3;nulbeheer;rand gemaaid;1
+42;50;Bohemica;dijk;zandleem;35,88;82,24;3;nulbeheer;rand gemaaid;1
+43;52;Bohemica;dijk;zandleem;23;43,14;3;nulbeheer;rand gemaaid;1
+44;53;Bohemica;wegberm;zand;89,26;84,91;3;vergraven;;
+45;54;Japonica;wegberm;zand;30,83;39,44;3;nulbeheer;nulbeheer;0

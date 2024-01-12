@@ -1,0 +1,235 @@
+---
+title: "De impact van beheer op de uibreiding van invasieve duizendknoop"
+author: "Marijke Thoonen"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document:
+    df_print: paged #geef een mooie tabel weer
+    toc: true # include table of contents
+    toc_float: true # table of contents being always visible even when the document is scrolled
+    number_sections: true #Add section numbers to the table of content.
+---
+
+```{r setup, include= FALSE} 
+library(knitr)
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(janitor)
+library(INBOtheme)
+library(dplyr)
+library(ggplot2)
+library(INBOtheme)
+```
+
+Histogram van de relatieve jaarlijkse uitbreiding in %
+```{r histogram relatieve uitbreiding}
+#inlezen data
+df <- read.csv2("./data/Experiment_DVW_2018_2022_RTK_data.csv") %>%
+                clean_names() %>%
+  mutate(haard_id = as_factor(haard_id),
+         soort = as_factor(soort),
+         aard_terrein = as_factor(aard_terrein),
+         bodem_ondergrond = as_factor(bodem_ondergrond),
+         beheer = as_factor(beheer),
+         groot_of_klein = case_when(
+           opp_m2_18 < 10 ~ "klein",
+           .default = "groot")) %>%
+  filter(!beheer == "vergraven")
+
+#toe- afname in oppervlakte berekenen
+df <- df %>%
+  mutate(verschil_opp = opp_m2_2122 - opp_m2_18,
+         uitbr_jaar = verschil_opp/interval_jaar,
+         rel_uitbr = verschil_opp/opp_m2_2122,
+         rel_uitbr_jaar = rel_uitbr/interval_jaar,
+         rel_uitbr_jaar_pct =  rel_uitbr_jaar*100)
+         #rel_uitbr_jaar_pct = round(rel_uitbr_jaar_pct, 0))
+
+
+#histogram
+histogram <- df %>%
+  ggplot() +
+  geom_histogram(aes(x = rel_uitbr_jaar_pct, fill = groot_of_klein),
+    breaks = seq(-10,40, 10)) +
+  scale_x_continuous(breaks = seq(-10,40, 10)) +
+  scale_y_continuous(breaks = seq(1,20, 1)) +
+  xlab ("Relatieve jaarlijkse uitbreiding in %") +
+  ylab ("Aantal ruigtes") +
+  labs(fill = "Omvang in 2018")
+histogram
+filename = paste("Histogram_relatieve_jaarlijkse_uitbreiding_pct",
+                 ".jpg", sep = "")
+ggsave(file = filename,
+       path = "./plots",
+       height = 6,
+       width = 6,
+       dpi = 300)
+
+
+```
+
+Boxplot van de relatieve jaarlijkse uitbreiding per begrenzingstype
+```{r boxplot van de relatieve jaarlijkse uitbreiding}
+df$begrensd <- as_factor(df$begrensd)
+mean_zijden <- df %>%
+  group_by(begrensd) %>% 
+  summarise(gemiddelde = mean(rel_uitbr_jaar_pct))
+
+boxplot <- df %>%
+  ggplot() +
+  geom_boxplot(aes(x = begrensd, y = rel_uitbr_jaar_pct, fill = begrensd)) +
+  ylab ("Jaarlijkse relatieve uitbreiding in %") +
+  labs(fill = "Aantal zijden met grens")
+boxplot
+filename = paste("Boxplot_uitbreiding_afhankelijk_begrenzing",
+                 ".jpg", sep = "")
+ggsave(file = filename,
+       path = "./plots",
+       height = 6,
+       width = 6,
+       dpi = 300)
+```
+
+Gemiddelde, mediaan, minimale en maximale relatieve jaarlijkse uitbreiding
+```{r summary stats relatieve uitbreiding per jaar}
+print(dataset_samenv <- df %>%
+  summarize(gemiddelde = mean(rel_uitbr_jaar_pct),
+            mediaan = median(rel_uitbr_jaar_pct),
+            min = min(rel_uitbr_jaar_pct),
+            max = max(rel_uitbr_jaar_pct),
+            variantie = var(rel_uitbr_jaar_pct)))
+```
+
+Ruigtes met nulbeheer breiden gemiddeld 12% uit per jaar, terwijl ruigtes met maaibeheer 
+gemiddeld 13% uitbreiden per jaar.
+```{r statistieken beheer}
+sum_stat_beheer <- df %>%
+  group_by(beheer) %>%
+  summarize(gemiddelde = mean(rel_uitbr_jaar),
+            mediaan = median(rel_uitbr_jaar),
+            min = min(rel_uitbr_jaar),
+            max = max(rel_uitbr_jaar),
+            var = var(x=rel_uitbr_jaar)) %>%
+  adorn_pct_formatting() %>%   
+  print()
+write.csv2("./sum_stat_beheer.csv")
+```
+
+Door duizendknoop laagfrequent te maaien stijgt de jaarlijkse relatieve uitbreiding gemiddeld 6%  
+```{r Berekening van de geobserveerde effectgrootte}
+df_nulbeheer <- df %>% filter(beheer == "nulbeheer")
+df_maaibeheer <- df %>% filter(beheer == "maaibeheer")
+gem_nulbeheer <- mean(df_nulbeheer$rel_uitbr_jaar)
+gem_maaibeheer <- mean(df_maaibeheer$rel_uitbr_jaar)
+print((gem_maaibeheer - gem_nulbeheer)/gem_nulbeheer * 100) # percent increase
+```
+
+Tellen van vertegenwoordinging omgevingskenmerken
+```{r tellen}
+groot_of_klein <- df %>% 
+  tabyl(groot_of_klein) %>% 
+  adorn_pct_formatting(digits = 0, rounding = "half up") %>%
+  print()
+
+soort <- df %>% 
+  tabyl(soort) %>% 
+  adorn_pct_formatting(digits = 0, rounding = "half up") %>%
+  print()
+
+aard_terrein <- df %>% 
+  tabyl(aard_terrein) %>% 
+  adorn_pct_formatting(digits = 0, rounding = "half up") %>%
+  print()
+
+bodem <- df %>% 
+  tabyl(bodem_ondergrond) %>% 
+  adorn_pct_formatting(digits = 0, rounding = "half up") %>%
+  print()
+
+begrensd <- df %>% 
+  tabyl(begrensd) %>% 
+  adorn_pct_formatting(digits = 0, rounding = "half up") %>%
+  print()
+
+```
+
+We voeren een uitbreiding op onze t-test uit waarbij beheer een factorvariabele is met levels "gemaaid" en "nulbeheer". We gebruiken een model (generalized least squares) om aparte variantie fit voor gemaaid en nulbeheer uit te voeren. Opmerking: Als je het "weights = " gedeelte weglaat, heb je hetzelfde als de t-test.
+Het enige verschil is dat je bij gls een F-statistiek in de output van anova(fm1) zal zien en bij de t-test krijg je een t-statistiek.
+Als je de t-statistiek kwadrateert zou deze gelijk moeten zijn aan de F-statistiek.
+
+```{r Statistiek}
+library(nlme)
+fm1 <- gls(rel_uitbr_jaar ~ 0 + beheer, weights = varIdent(form = ~ 1 | beheer),
+           data = df)
+anova(fm1)#binnen de anova neem je een object op dat de output is van een model fitting functie lm(), glm() of gls()
+summary(fm1)
+
+fm2 <- gls( #een soort van lineair model gezien het verschil tussen varianties
+  rel_uitbr_jaar ~ 0 + beheer, # beschrijving van het model, links de responsvariabele  ~ rechts de factorvariabele (+0 omdat er maar 1 factorvariabele is)
+  data = df) #het dataframe
+
+summary(fm2)
+
+anova(fm1, fm2)
+#de output hiervan geeft een likelihoodratiotest waarmee je kan zien of
+#het fm1 model significant beter is (en varianties dus ongelijk zijn).
+
+#Daarnaast kan je summary(fm1) bekijken bij het gedeelte over de variance function
+#(varIdent), daar kan je dan lezen hoeveel keer groter de variantie van maaien is
+#versus niet maaien.
+```
+
+Boxplot die het maaibeheer met nulbeheer vergelijkt
+```{r Boxplot beheer}
+
+boxplot <- df %>%
+  ggplot(aes(x = beheer, y = rel_uitbr_jaar_pct, fill = beheer), notch = TRUE) +
+  geom_boxplot() +
+  scale_y_continuous("Jaarlijkse relatieve oppervlakteuitbreiding (%)") +
+  labs(fill = "Beheertype")
+boxplot
+filename = paste("Boxplot_relatieve_uitbreiding_ifv_beheer",
+                 ".jpg", sep = "")
+ggsave(file = filename,
+       path = "./plots",
+       height = 6,
+       width = 6,
+       dpi = 300)
+
+```
+Boxplot die het maaibeheer met nulbeheer vergelijkt voor de onbegrensde haarden
+
+```{r Boxplots beheer onbegrensde haarden}
+
+boxplot_O <- df %>%
+  filter(begrensd == "0") %>% 
+  ggplot(aes(x = beheer, y = rel_uitbr_jaar_pct, fill = beheer), notch = TRUE) +
+  geom_boxplot() +
+  scale_y_continuous("Jaarlijkse relatieve oppervlakteuitbreiding (%)") +
+  labs(fill = "Beheertype")
+boxplot_O
+filename = paste("Boxplot_relatieve_uitbreiding_ifv_beheer_onbegrensd",
+                 ".jpg", sep = "")
+ggsave(file = filename,
+       path = "./plots",
+       height = 6,
+       width = 6,
+       dpi = 300)
+```
+
+Statistische test voor dataset met enkel onbegrensde haarden
+```{r Statistiek onbegrensd}
+
+df_O <- df %>%
+  filter(begrensd == "0")
+
+fm3 <- gls(rel_uitbr_jaar ~ 0 + beheer, 
+           #weights = varIdent(form = ~ 1 | beheer),
+           data = df_O)
+anova(fm3)
+summary(fm3)
+```
