@@ -257,6 +257,31 @@ fm3 <- gls(rel_uitbr_jaar ~ 0 + beheer,
 anova(fm3)
 summary(fm3)
 ```
+We berekenen een t-statistiek voor het verschil tussen de gemiddelden van de 
+staal met maaibeheer en de staal met nulbeheer voor de dataset met onbegrensde haarden. We berekenen een p-waarde van 
+0,43 > 0.05 en dus aanvaarden we de nulhypothese.
+```{r handmatige t-statistiek voor df met onbegrensde haarden}
+df_O_maaibeheer <- df_O %>%  filter(beheer == "maaibeheer")
+df_O_nulbeheer <- df_O %>%  filter(beheer == "nulbeheer")
+
+gem_maaibeheer_df_O <- mean(df_O_maaibeheer$rel_uitbr_jaar)
+gem_nulbeheer_df_O <- mean(df_O_nulbeheer$rel_uitbr_jaar)
+
+s_maaibeheer_df_O <- sd(df_O_maaibeheer$rel_uitbr_jaar)
+s_nulbeheer_df_O <- sd(df_O_nulbeheer$rel_uitbr_jaar)
+
+n_nulbeheer_df_O <- n_distinct(df_O_nulbeheer$rel_uitbr_jaar)
+n_maaibeheer_df_O <- n_distinct(df_O_maaibeheer$rel_uitbr_jaar)
+
+teller_df_O <- gem_maaibeheer_df_O - gem_nulbeheer_df_O
+noemer_df_O <- sqrt(s_maaibeheer_df_O^2/n_maaibeheer_df_O + s_nulbeheer_df_O^2/n_nulbeheer_df_O)
+t_stat_df_O <- teller_df_O/noemer_df_O
+t_stat_df_O
+
+degrees_of_freedom_df_O <- n_maaibeheer_df_O + n_nulbeheer_df_O -2
+p_value_df_O <- pt(t_stat_df_O, df = degrees_of_freedom, lower.tail = TRUE)
+p_value_df_O
+```
 
 Het betrouwbaarheidsinterval voor onze test statistiek met de quantile-methode.
 ```{r 95% betrouwbaarheidsinterval}
