@@ -169,13 +169,25 @@ Als je de t-statistiek kwadrateert zou deze gelijk moeten zijn aan de F-statisti
 
 ```{r Statistiek, include=TRUE}
 library(nlme)
+
+# fit zonder intercept
 fm1 <- gls(rel_uitbr_jaar ~ 0 + beheer, weights = varIdent(form = ~ 1 | beheer),
            data = df)
 anova(fm1)#binnen de anova neem je een object op dat de output is van een model fitting functie lm(), glm() of gls()
+anova(fm1)
+# om het contrast tussen nul en maai te krijgen moet je L specifiëren (zie ?anova.gls)
+anova(fm1, L = c(-1, 1)) # sqrt(0.0277) = t-test waarde, p-waarde is hier voor tweezijdige hypothese
 summary(fm1)
 
+# fit met intercept
+fm1bis <- gls(rel_uitbr_jaar ~ beheer, weights = varIdent(form = ~ 1 | beheer),
+           data = df)
+anova(fm1bis) # nu krijg je onmiddellijk het verschil voor nul vs maaibeheer in tweede lijn en t = sqrt(F)
+summary(fm1bis) # check de t-waarde bij maaibeheer = zelfde van de t-test, p-waarde is voor tweezijdige hypothese
+
+
 fm2 <- gls( #een soort van lineair model gezien het verschil tussen varianties
-  rel_uitbr_jaar ~ 0 + beheer, # beschrijving van het model, links de responsvariabele  ~ rechts de factorvariabele (+0 omdat er maar 1 factorvariabele is)
+  rel_uitbr_jaar ~ beheer, # beschrijving van het model, links de responsvariabele  ~ rechts de factorvariabele (+0 omdat er maar 1 factorvariabele is)
   data = df) #het dataframe
 
 summary(fm2)
@@ -234,16 +246,31 @@ staal met maaibeheer en de staal met nulbeheer. We berekenen een p-waarde van
 ```{r handmatige t-statistiek}
 s_nulbeheer <- sd(df_nulbeheer$rel_uitbr_jaar)
 s_maaibeheer <- sd(df_maaibeheer$rel_uitbr_jaar)
-n_nulbeheer <- n_distinct(df_nulbeheer$rel_uitbr_jaar)
-n_maaibeheer <- n_distinct(df_maaibeheer$rel_uitbr_jaar)
+n_nulbeheer <- length(df_nulbeheer$rel_uitbr_jaar)
+n_maaibeheer <- length(df_maaibeheer$rel_uitbr_jaar)
 teller <- gem_maaibeheer - gem_nulbeheer
 noemer <- sqrt(s_maaibeheer^2/n_maaibeheer + s_nulbeheer^2/n_nulbeheer)
 t_stat <- teller/noemer
 t_stat
 
-degrees_of_freedom <- n_maaibeheer + n_nulbeheer -2
+degrees_of_freedom <- n_maaibeheer + n_nulbeheer - 2
 p_value <- pt(t_stat, df = degrees_of_freedom, lower.tail = FALSE)
-p_value
+p_value # dit is voor een éénzijdige hypothesetest
+
+# bovenstaande kan je direct berekenen met t.test
+t.test(
+  x = df_maaibeheer$rel_uitbr_jaar,
+  y = df_nulbeheer$rel_uitbr_jaar,
+  alternative = "greater", # x > y
+  paired = FALSE, var.equal = FALSE)
+
+# voor een tweezijdige test wordt de p-waarde (zelfde als bij gls analyse)
+t.test(
+  x = df_maaibeheer$rel_uitbr_jaar,
+  y = df_nulbeheer$rel_uitbr_jaar,
+  alternative = "two.sided", # x > y
+  paired = FALSE, var.equal = FALSE)
+
 ```
 
 Statistische test voor dataset met enkel onbegrensde haarden
