@@ -124,6 +124,7 @@ df_nulbeheer <- df %>% filter(beheer == "nulbeheer")
 df_maaibeheer <- df %>% filter(beheer == "maaibeheer")
 gem_nulbeheer <- mean(df_nulbeheer$rel_uitbr_jaar)
 gem_maaibeheer <- mean(df_maaibeheer$rel_uitbr_jaar)
+print(gem_maaibeheer-gem_nulbeheer)
 print((gem_maaibeheer - gem_nulbeheer)/gem_nulbeheer * 100) # percent increase
 ```
 
@@ -288,8 +289,10 @@ Het betrouwbaarheidsinterval voor onze test statistiek met de quantile-methode.
 conf_int_quantile <- df %>%
   summarize(
     lower = quantile(rel_uitbr_jaar_pct, 0.025),
-    upper = quantile(rel_uitbr_jaar_pct, 0.975)
+    upper = quantile(rel_uitbr_jaar_pct, 0.975),
+    median = quantile(rel_uitbr_jaar_pct, 0.5),
+    mean = mean(rel_uitbr_jaar_pct)
   )
 
-conf_int_quantile
+round(conf_int_quantile, digits = 1)
 ```
