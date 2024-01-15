@@ -53,8 +53,8 @@ df <- df %>%
 #histogram
 histogram <- df %>%
   ggplot() +
-  geom_histogram(aes(x = rel_uitbr_jaar_pct, fill = groot_of_klein),
-    breaks = seq(-10,40, 10)) +
+  geom_histogram(aes(x = rel_uitbr_jaar_pct, fill = groot_of_klein), 
+                 color = "darkblue", breaks = seq(-10,40, 10)) +
   scale_x_continuous(breaks = seq(-10,40, 10)) +
   scale_y_continuous(breaks = seq(1,20, 1)) +
   xlab ("Relatieve jaarlijkse uitbreiding in %") +
@@ -68,7 +68,6 @@ ggsave(file = filename,
        height = 6,
        width = 6,
        dpi = 300)
-
 
 ```
 
@@ -156,12 +155,18 @@ begrensd <- df %>%
   print()
 
 ```
+We onderscheiden twee verschillende staalnamegroepen:
+Een groep die een nulbeheer kreeg en een groep die een maaibeheer kreeg.
+We vergelijken de gemiddelden van de jaarlijkse, relatieve uitbreiding van beide groepen.
+Onze nulhypothese: De gemiddelde jaarlijkse, relatieve uitbreiding van de gemaaide ruigtes verschilt niet van de gemiddelde, relatieve uitbreiding van de ruigtes met nulbeheer
+Onze alternateve hypothese: De gemiddeld jaarlijkse, relatieve uitbreiding van de gemaaide ruigtes is groter dan de gemiddelde, relatieve uitbreiding van de ruigtes met nulbeheer.
+
 
 We voeren een uitbreiding op onze t-test uit waarbij beheer een factorvariabele is met levels "gemaaid" en "nulbeheer". We gebruiken een model (generalized least squares) om aparte variantie fit voor gemaaid en nulbeheer uit te voeren. Opmerking: Als je het "weights = " gedeelte weglaat, heb je hetzelfde als de t-test.
 Het enige verschil is dat je bij gls een F-statistiek in de output van anova(fm1) zal zien en bij de t-test krijg je een t-statistiek.
 Als je de t-statistiek kwadrateert zou deze gelijk moeten zijn aan de F-statistiek.
 
-```{r Statistiek}
+```{r Statistiek, include=TRUE}
 library(nlme)
 fm1 <- gls(rel_uitbr_jaar ~ 0 + beheer, weights = varIdent(form = ~ 1 | beheer),
            data = df)
@@ -173,6 +178,7 @@ fm2 <- gls( #een soort van lineair model gezien het verschil tussen varianties
   data = df) #het dataframe
 
 summary(fm2)
+anova(fm2)
 
 anova(fm1, fm2)
 #de output hiervan geeft een likelihoodratiotest waarmee je kan zien of
@@ -221,6 +227,24 @@ ggsave(file = filename,
        dpi = 300)
 ```
 
+We berekenen een t-statistiek voor het verschil tussen de gemiddelden van de 
+staal met maaibeheer en de staal met nulbeheer. We berekenen een p-waarde van 
+0,43 > 0.05 en dus aanvaarden we de nulhypothese.
+```{r handmatige t-statistiek}
+s_nulbeheer <- sd(df_nulbeheer$rel_uitbr_jaar)
+s_maaibeheer <- sd(df_maaibeheer$rel_uitbr_jaar)
+n_nulbeheer <- n_distinct(df_nulbeheer$rel_uitbr_jaar)
+n_maaibeheer <- n_distinct(df_maaibeheer$rel_uitbr_jaar)
+teller <- gem_maaibeheer - gem_nulbeheer
+noemer <- sqrt(s_maaibeheer^2/n_maaibeheer + s_nulbeheer^2/n_nulbeheer)
+t_stat <- teller/noemer
+t_stat
+
+degrees_of_freedom <- n_maaibeheer + n_nulbeheer -2
+p_value <- pt(t_stat, df = degrees_of_freedom, lower.tail = FALSE)
+p_value
+```
+
 Statistische test voor dataset met enkel onbegrensde haarden
 ```{r Statistiek onbegrensd}
 
@@ -232,4 +256,15 @@ fm3 <- gls(rel_uitbr_jaar ~ 0 + beheer,
            data = df_O)
 anova(fm3)
 summary(fm3)
+```
+
+Het betrouwbaarheidsinterval voor onze test statistiek met de quantile-methode.
+```{r 95% betrouwbaarheidsinterval}
+conf_int_quantile <- df %>%
+  summarize(
+    lower = quantile(rel_uitbr_jaar_pct, 0.025),
+    upper = quantile(rel_uitbr_jaar_pct, 0.975)
+  )
+
+conf_int_quantile
 ```
