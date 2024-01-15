@@ -182,12 +182,17 @@ summary(fm1)
 # fit met intercept
 fm1bis <- gls(rel_uitbr_jaar ~ beheer, weights = varIdent(form = ~ 1 | beheer),
            data = df)
-anova(fm1bis) # nu krijg je onmiddellijk het verschil voor nul vs maaibeheer in tweede lijn en t = sqrt(F)
-summary(fm1bis) # check de t-waarde bij maaibeheer = zelfde van de t-test, p-waarde is voor tweezijdige hypothese
+anova(fm1bis)# nu krijg je onmiddellijk het verschil voor nul vs maaibeheer in tweede lijn en t = sqrt(F)
+sqrt(0.02774) # check de t-waarde bij maaibeheer = zelfde van de t-test, p-waarde is voor tweezijdige hypothese
 
+# fit met intercept df_O
+fm1tris <- gls(rel_uitbr_jaar ~ beheer, weights = varIdent(form = ~ 1 | beheer),
+           data = df_O)
+anova(fm1tris)# nu krijg je onmiddellijk het verschil voor nul vs maaibeheer in tweede lijn en t = sqrt(F)
+sqrt(2.18029) # check de t-waarde bij maaibeheer = zelfde van de t-test, p-waarde is voor tweezijdige hypothese
 
 fm2 <- gls( #een soort van lineair model gezien het verschil tussen varianties
-  rel_uitbr_jaar ~ beheer, # beschrijving van het model, links de responsvariabele  ~ rechts de factorvariabele (+0 omdat er maar 1 factorvariabele is)
+  rel_uitbr_jaar ~ beheer, 
   data = df) #het dataframe
 
 summary(fm2)
@@ -261,7 +266,21 @@ p_value # dit is voor een éénzijdige hypothesetest
 t.test(
   x = df_maaibeheer$rel_uitbr_jaar,
   y = df_nulbeheer$rel_uitbr_jaar,
-  alternative = "greater", # x > y
+  alternative = "less", # x > y
+  paired = FALSE, var.equal = FALSE)
+
+# voor een tweezijdige test wordt de p-waarde (zelfde als bij gls analyse) voor df_O
+t.test(
+  x = df_O_maaibeheer$rel_uitbr_jaar,
+  y = df_O_nulbeheer$rel_uitbr_jaar,
+  alternative = "less", # x > y
+  paired = FALSE, var.equal = FALSE)
+
+# voor een tweezijdige test wordt de p-waarde (zelfde als bij gls analyse) voor df_O
+t.test(
+  x = df_O_maaibeheer$rel_uitbr_jaar,
+  y = df_O_nulbeheer$rel_uitbr_jaar,
+  alternative = "two.sided", # x > y
   paired = FALSE, var.equal = FALSE)
 
 # voor een tweezijdige test wordt de p-waarde (zelfde als bij gls analyse)
