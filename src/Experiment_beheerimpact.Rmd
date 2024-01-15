@@ -44,9 +44,10 @@ df <- read.csv2("./data/Experiment_DVW_2018_2022_RTK_data.csv") %>%
 df <- df %>%
   mutate(verschil_opp = opp_m2_2122 - opp_m2_18,
          uitbr_jaar = verschil_opp/interval_jaar,
-         rel_uitbr = verschil_opp/opp_m2_2122,
+         rel_uitbr = verschil_opp/opp_m2_18,
          rel_uitbr_jaar = rel_uitbr/interval_jaar,
-         rel_uitbr_jaar_pct =  rel_uitbr_jaar*100)
+         rel_uitbr_jaar_pct =  rel_uitbr_jaar*100) %>%
+  as_tibble()
          #rel_uitbr_jaar_pct = round(rel_uitbr_jaar_pct, 0))
 
 
@@ -70,6 +71,47 @@ ggsave(file = filename,
        dpi = 300)
 
 ```
+
+## Relatieve uitbreiding
+
+- niet delen door toestand in eindjaar (wel beginjaar) of
+- begintoestand in rekening brengen zoals in https://onlinelibrary.wiley.com/doi/10.1111/jvs.13117
+
+Dus model wordt wijziging in functie van begintoestand + covariaten.
+
+```{r}
+library(nlme)
+m0 <- gls(
+  rel_uitbr ~ opp_m2_18 + beheer,
+  weights = varIdent(form = ~ 1 | beheer),
+  data = df)
+
+summary(m0)
+anova(m0)
+plot(m0) # modelvalidatie ziet er niet goed uit (y-as zou band tussen -2 en +2 moeten zijn)
+
+# als logratio-analyse
+df2 <- df %>%
+  mutate(logratio = log(opp_m2_2122 / opp_m2_18))
+
+m1 <- gls(
+  logratio ~ log(opp_m2_18) + interval_jaar + beheer,
+  weights = varIdent(form = ~ 1 | beheer),
+  data = df2)
+
+plot(m1) # ziet er al veel beter uit
+summary(m1)
+anova(m1)
+marginaleffects::plot_predictions(m1, "beheer", transform = "exp") +
+  scale_y_continuous(
+    "Relatieve procentuele wijziging\n(100% = geen wijziging; 150% = maal 1,5)",
+    labels = scales::percent
+    )
+
+```
+
+
+
 
 Boxplot van de relatieve jaarlijkse uitbreiding per begrenzingstype
 ```{r boxplot van de relatieve jaarlijkse uitbreiding}
