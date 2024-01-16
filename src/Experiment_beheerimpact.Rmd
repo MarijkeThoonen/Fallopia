@@ -17,6 +17,8 @@ knitr::opts_chunk$set(
 	message = FALSE,
 	warning = FALSE
 )
+install.packages("marginaleffects")
+library(marginaleffects)
 library(tidyverse)
 library(janitor)
 library(INBOtheme)
@@ -40,36 +42,73 @@ df <- read.csv2("./data/Experiment_DVW_2018_2022_RTK_data.csv") %>%
            .default = "groot")) %>%
   filter(!beheer == "vergraven")
 
-#toe- afname in oppervlakte berekenen
+#toe- afname in oppervlakte berekenen -	Ik zie in dat delen door de eindoppervlakte fout was. De uitbreiding ten opzichte van de nulsituatie in 2018 moet bepaald worden. Die variabele geeft de effectgrootte van het beheer in de voorbije drie jaar. Is het oppervlakteverschil bv. 3m² gedeeld door de oppervlakte in 2018 bv. 10, dan is onze variabele 0,3. Is het oppervlakteverschil bv. 5m² voor een andere ruigte en de oppervlakte in 2018 ook 10m², dan is onze variabele 0,5. Die laatste ruigte is sterker uitgebreid en dus is de variabele groter. Al je het zou delen door de oppervlakte in 2021/2022 dan krijg je 3/13 (0,23) en 3/15 (0,33) een verschil van 0,1 ipv 0,2. Door te delen door de oppervlakte in 2018 zal het effect dus groter zijn, omdat je deelt door kleinere waarden.
+
+#Een log-transformatie maakt grote waarden heel veel kleiner terwijl kleine waarden slechts een beetje kleiner zullen worden. Een log-transformatie heeft dus het potentieel om verdelingen die scheef naar rechts zijn meer symmetrisch te maken.De kleine haarden worden relatief tov hun oppervlakte in 2018 tot 6 keer groter, dat is natuurlijk veel beperkter voor de al grotere ruigtes en daarom is een log transformatie beter.
+
 df <- df %>%
   mutate(verschil_opp = opp_m2_2122 - opp_m2_18,
          uitbr_jaar = verschil_opp/interval_jaar,
          rel_uitbr = verschil_opp/opp_m2_18,
          rel_uitbr_jaar = rel_uitbr/interval_jaar,
-         rel_uitbr_jaar_pct =  rel_uitbr_jaar*100) %>%
+         rel_uitbr_jaar_pct =  rel_uitbr_jaar*100,
+         ratio = opp_m2_2122 / opp_m2_18,
+         logratio = log(opp_m2_2122 / opp_m2_18),
+         logratio_jaar = logratio/interval_jaar,
+         categorie = as_factor(case_when(
+           rel_uitbr_jaar < 0 ~ "krimp 0-5%",
+           rel_uitbr_jaar < 0.1 ~ "uitbr 0-10 %",
+           rel_uitbr_jaar < 0.2 ~ "uitbr 10-20 %",
+           rel_uitbr_jaar < 0.5 ~ "uitbr 20-50 %",
+           .default = "uitbr > 50 %"))) %>%
   as_tibble()
          #rel_uitbr_jaar_pct = round(rel_uitbr_jaar_pct, 0))
 
+df$categorie <- factor(df$categorie, c(
+  "krimp 0-5%",
+  "uitbr 0-10 %", 
+  "uitbr 10-20 %",
+  "uitbr 20-50 %", 
+  "uitbr > 50 %"))
 
-#histogram
-histogram <- df %>%
-  ggplot() +
-  geom_histogram(aes(x = rel_uitbr_jaar_pct, fill = groot_of_klein), 
-                 color = "darkblue", breaks = seq(-10,40, 10)) +
-  scale_x_continuous(breaks = seq(-10,40, 10)) +
-  scale_y_continuous(breaks = seq(1,20, 1)) +
-  xlab ("Relatieve jaarlijkse uitbreiding in %") +
-  ylab ("Aantal ruigtes") +
-  labs(fill = "Omvang in 2018")
-histogram
-filename = paste("Histogram_relatieve_jaarlijkse_uitbreiding_pct",
+plot1 <- df %>% 
+  ggplot(aes(x = categorie, fill = groot_of_klein)) +
+  geom_bar(aes(y = after_stat(count / sum(count)*100))) +
+  xlab("") +
+  ylab("Aandeel ruigtes in percent")+
+  scale_y_continuous(breaks = seq(0, 100, 2))
+  plot1
+  filename = paste("Categorieën uitbreiding",
                  ".jpg", sep = "")
 ggsave(file = filename,
        path = "./plots",
        height = 6,
        width = 6,
        dpi = 300)
+```
 
+```{r histogram relatieve uitrbeiding}
+#histogram
+
+histogram <- df %>%
+  ggplot(aes(x = logratio_jaar, fill = groot_of_klein)) +
+  geom_histogram(aes(y = after_stat(count / sum(count)*100)),
+                 color = 'blue',
+                 binwidth = 0.1) +
+  scale_x_continuous(breaks = seq(-0.1, 1, 0.1)) +
+  scale_y_continuous(breaks = seq(0, 40, 2)) +
+  xlab ("Relatieve jaarlijkse oppervlakteverandering") +
+  ylab ("Aandeel ruigtes %") +
+  labs(fill = "Omvang in 2018", alpha = "Beheer") +
+  theme(axis.text.x=element_text(angle = 90, hjust = 0))
+histogram
+filename = paste("Histogram_logratio",
+                 ".jpg", sep = "")
+ggsave(file = filename,
+       path = "./plots",
+       height = 6,
+       width = 10,
+       dpi = 300)
 ```
 
 ## Relatieve uitbreiding
@@ -82,7 +121,7 @@ Dus model wordt wijziging in functie van begintoestand + covariaten.
 ```{r}
 library(nlme)
 m0 <- gls(
-  rel_uitbr ~ opp_m2_18 + beheer,
+  rel_uitbr ~ opp_m2_18 + beheer, #om rekening te houden met regression to the mean beginsituatie in rekening brengen als verklarende variabele
   weights = varIdent(form = ~ 1 | beheer),
   data = df)
 
@@ -99,6 +138,7 @@ m1 <- gls(
   weights = varIdent(form = ~ 1 | beheer),
   data = df2)
 
+
 plot(m1) # ziet er al veel beter uit
 summary(m1)
 anova(m1)
@@ -109,9 +149,6 @@ marginaleffects::plot_predictions(m1, "beheer", transform = "exp") +
     )
 
 ```
-
-
-
 
 Boxplot van de relatieve jaarlijkse uitbreiding per begrenzingstype
 ```{r boxplot van de relatieve jaarlijkse uitbreiding}
@@ -138,29 +175,27 @@ ggsave(file = filename,
 Gemiddelde, mediaan, minimale en maximale relatieve jaarlijkse uitbreiding
 ```{r summary stats relatieve uitbreiding per jaar}
 print(dataset_samenv <- df %>%
-  summarize(gemiddelde = mean(rel_uitbr_jaar_pct),
-            mediaan = median(rel_uitbr_jaar_pct),
-            min = min(rel_uitbr_jaar_pct),
-            max = max(rel_uitbr_jaar_pct),
-            variantie = var(rel_uitbr_jaar_pct)))
-```
-
-Ruigtes met nulbeheer breiden gemiddeld 12% uit per jaar, terwijl ruigtes met maaibeheer 
-gemiddeld 13% uitbreiden per jaar.
-```{r statistieken beheer}
-sum_stat_beheer <- df %>%
-  group_by(beheer) %>%
   summarize(gemiddelde = mean(rel_uitbr_jaar),
             mediaan = median(rel_uitbr_jaar),
             min = min(rel_uitbr_jaar),
             max = max(rel_uitbr_jaar),
-            var = var(x=rel_uitbr_jaar)) %>%
-  adorn_pct_formatting() %>%   
-  print()
-write.csv2("./sum_stat_beheer.csv")
+            variantie = var(rel_uitbr_jaar)))
 ```
 
-Door duizendknoop laagfrequent te maaien stijgt de jaarlijkse relatieve uitbreiding gemiddeld 6%  
+Ruigtes met nulbeheer breiden gemiddeld 52,4% uit per jaar, terwijl ruigtes met maaibeheergemiddeld 89,4% uitbreiden per jaar.
+```{r statistieken beheer}
+sum_stat_beheer <- df %>%
+  group_by(beheer) %>%
+  summarize(gemiddelde = mean(logratio_jaar),
+            mediaan = median(logratio_jaar),
+            min = min(logratio_jaar),
+            max = max(logratio_jaar))
+
+  write.csv2("./sum_stat_beheer.csv")
+sum_stat_beheer
+```
+
+Door duizendknoop laagfrequent te maaien stijgt de jaarlijkse relatieve uitbreiding gemiddeld 70%  
 ```{r Berekening van de geobserveerde effectgrootte}
 df_nulbeheer <- df %>% filter(beheer == "nulbeheer")
 df_maaibeheer <- df %>% filter(beheer == "maaibeheer")
@@ -253,12 +288,13 @@ Boxplot die het maaibeheer met nulbeheer vergelijkt
 ```{r Boxplot beheer}
 
 boxplot <- df %>%
-  ggplot(aes(x = beheer, y = rel_uitbr_jaar_pct, fill = beheer), notch = TRUE) +
+  ggplot(aes(x = beheer, y = logratio, fill = beheer), notch = TRUE) +
   geom_boxplot() +
-  scale_y_continuous("Jaarlijkse relatieve oppervlakteuitbreiding (%)") +
-  labs(fill = "Beheertype")
-boxplot
-filename = paste("Boxplot_relatieve_uitbreiding_ifv_beheer",
+  ylab("Jaarlijkse relatieve oppervlakteverandering - logratio") +
+ labs(fill = "Beheertype") +
+  xlab("")
+  boxplot
+filename = paste("Boxplot_relatieve_oppervlakteverandering_ifv_beheer",
                  ".jpg", sep = "")
 ggsave(file = filename,
        path = "./plots",
@@ -273,7 +309,7 @@ Boxplot die het maaibeheer met nulbeheer vergelijkt voor de onbegrensde haarden
 
 boxplot_O <- df %>%
   filter(begrensd == "0") %>% 
-  ggplot(aes(x = beheer, y = rel_uitbr_jaar_pct, fill = beheer), notch = TRUE) +
+  ggplot(aes(x = beheer, y = logratio_jaar, fill = beheer), notch = TRUE) +
   geom_boxplot() +
   scale_y_continuous("Jaarlijkse relatieve oppervlakteuitbreiding (%)") +
   labs(fill = "Beheertype")
