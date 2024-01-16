@@ -131,7 +131,8 @@ plot(m0) # modelvalidatie ziet er niet goed uit (y-as zou band tussen -2 en +2 m
 
 # als logratio-analyse
 df2 <- df %>%
-  mutate(logratio = log(opp_m2_2122 / opp_m2_18))
+  mutate(logratio = log(opp_m2_2122 / opp_m2_18)) %>% 
+  filter(begrensd == 0)
 
 m1 <- gls(
   logratio ~ log(opp_m2_18) + interval_jaar + beheer,
@@ -159,7 +160,7 @@ mean_zijden <- df %>%
 
 boxplot <- df %>%
   ggplot() +
-  geom_boxplot(aes(x = begrensd, y = rel_uitbr_jaar_pct, fill = begrensd)) +
+  geom_boxplot(aes(x = begrensd, y = logratio, fill = begrensd)) +
   ylab ("Jaarlijkse relatieve uitbreiding in %") +
   labs(fill = "Aantal zijden met grens")
 boxplot
@@ -182,14 +183,14 @@ print(dataset_samenv <- df %>%
             variantie = var(rel_uitbr_jaar)))
 ```
 
-Ruigtes met nulbeheer breiden gemiddeld 52,4% uit per jaar, terwijl ruigtes met maaibeheergemiddeld 89,4% uitbreiden per jaar.
 ```{r statistieken beheer}
 sum_stat_beheer <- df %>%
   group_by(beheer) %>%
   summarize(gemiddelde = mean(logratio_jaar),
             mediaan = median(logratio_jaar),
             min = min(logratio_jaar),
-            max = max(logratio_jaar))
+            max = max(logratio_jaar),
+            variantie = var(logratio_jaar))
 
   write.csv2("./sum_stat_beheer.csv")
 sum_stat_beheer
@@ -309,7 +310,7 @@ Boxplot die het maaibeheer met nulbeheer vergelijkt voor de onbegrensde haarden
 
 boxplot_O <- df %>%
   filter(begrensd == "0") %>% 
-  ggplot(aes(x = beheer, y = logratio_jaar, fill = beheer), notch = TRUE) +
+  ggplot(aes(x = beheer, y = logratio, fill = beheer), notch = TRUE) +
   geom_boxplot() +
   scale_y_continuous("Jaarlijkse relatieve oppervlakteuitbreiding (%)") +
   labs(fill = "Beheertype")
@@ -412,10 +413,10 @@ Het betrouwbaarheidsinterval voor onze test statistiek met de quantile-methode.
 ```{r 95% betrouwbaarheidsinterval}
 conf_int_quantile <- df %>%
   summarize(
-    lower = quantile(rel_uitbr_jaar_pct, 0.025),
-    upper = quantile(rel_uitbr_jaar_pct, 0.975),
-    median = quantile(rel_uitbr_jaar_pct, 0.5),
-    mean = mean(rel_uitbr_jaar_pct)
+    lower = quantile(logratio, 0.025),
+    upper = quantile(logratio, 0.975),
+    median = quantile(logratio, 0.5),
+    mean = mean(logratio)
   )
 
 round(conf_int_quantile, digits = 1)
