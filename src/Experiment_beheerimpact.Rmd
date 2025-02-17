@@ -147,12 +147,72 @@ plot(m1) # ziet er al veel beter uit
 summary(m1)
 anova(m1)
 marginaleffects::plot_predictions(m1, "beheer", transform = "exp") +
+```{r}
+# interval_jaar is altijd 3 in df, dus is constante en mag weg
+# ipv logratio als response
+# voorspelling maken van opp in 2021/22 als functie van 
+# initiële opp in interactie met beheer
+# opp initieel log getransformeerd
+# want opp gemodelleerd via Gamma met log link
+m1 <- glmmTMB::glmmTMB(
+  opp_m2_2122 ~ log(opp_m2_18) * beheer,
+  dispformula = ~ beheer,
+  family = Gamma(link = "log"),
+  data = df)
+
+
+performance::check_residuals(m1) |> plot()
+summary(m1)
+car::Anova(m1)
+
+# we hermaken de figuur maar geven nu expliciet aan 
+# welke waarden constant gehouden moeten worden:
+
+nd <- data.frame(
+  opp_m2_18 = 100,
+  interval_jaar = 1,
+  beheer = c("nulbeheer", "maaibeheer")
+)
+
+library(marginaleffects)
+p1 <- predictions(
+  m1,
+  newdata = datagrid(
+    opp_m2_18 = c(1 , 5, 10, 50, 100, 500, 1000),
+    beheer = c("nulbeheer", "maaibeheer")
+  ),
+  type = "link"
+)
+
+
+p1 %>%
+  as_tibble() %>%
+  mutate(
+    ratio.est = exp(estimate - log(opp_m2_18)) ^ (1/3),
+    ratio.lwr = exp(conf.low - log(opp_m2_18)) ^ (1/3),
+    ratio.upr = exp(conf.high - log(opp_m2_18)) ^ (1/3)
+  ) %>%
+  ggplot() +
+  geom_pointrange(
+    aes(
+      x = beheer,
+      y = ratio.est,
+      ymin = ratio.lwr,
+      ymax = ratio.upr,
+      colour = factor(opp_m2_18)
+    ),
+    position = position_dodge(width = 0.8)
+  ) +
+  geom_hline(yintercept = 1) +
   scale_y_continuous(
-    "Relatieve procentuele wijziging\n(100% = geen wijziging; 150% = maal 1,5)",
+    "Jaarlijkse groeisnelheid (200% = x 2; 50% = x 1/2)",
+    breaks = c(1/2, 3/4, 1, 5/4, 3/2, 2, 3),
+    transform = "log",
     labels = scales::percent
-    )
+  )
 
 ```
+
 
 Boxplot van de relatieve jaarlijkse uitbreiding per begrenzingstype
 
