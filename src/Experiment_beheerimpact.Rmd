@@ -8,6 +8,8 @@ output:
     toc: true # include table of contents
     toc_float: true # table of contents being always visible even when the document is scrolled
     number_sections: true #Add section numbers to the table of content.
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include= FALSE} 
@@ -25,6 +27,7 @@ library(INBOtheme)
 library(dplyr)
 library(ggplot2)
 library(INBOtheme)
+conflicted::conflicts_prefer(dplyr::filter)
 ```
 
 Histogram van de relatieve jaarlijkse uitbreiding in %
@@ -77,8 +80,8 @@ plot1 <- df %>%
   xlab("") +
   ylab("Aandeel ruigtes in percent")+
   scale_y_continuous(breaks = seq(0, 100, 2))
-  plot1
-  filename = paste("Categorieën uitbreiding",
+plot1
+filename = paste("Categorieën uitbreiding",
                  ".jpg", sep = "")
 ggsave(file = filename,
        path = "./plots",
@@ -152,6 +155,7 @@ marginaleffects::plot_predictions(m1, "beheer", transform = "exp") +
 ```
 
 Boxplot van de relatieve jaarlijkse uitbreiding per begrenzingstype
+
 ```{r boxplot van de relatieve jaarlijkse uitbreiding}
 df$begrensd <- as_factor(df$begrensd)
 mean_zijden <- df %>%
@@ -192,21 +196,23 @@ sum_stat_beheer <- df %>%
             max = max(logratio_jaar),
             variantie = var(logratio_jaar))
 
-  write.csv2("./sum_stat_beheer.csv")
+write.csv2("./sum_stat_beheer.csv")
 sum_stat_beheer
 ```
 
 Door duizendknoop laagfrequent te maaien stijgt de jaarlijkse relatieve uitbreiding gemiddeld 70%  
+
 ```{r Berekening van de geobserveerde effectgrootte}
 df_nulbeheer <- df %>% filter(beheer == "nulbeheer")
 df_maaibeheer <- df %>% filter(beheer == "maaibeheer")
 gem_nulbeheer <- mean(df_nulbeheer$rel_uitbr_jaar)
 gem_maaibeheer <- mean(df_maaibeheer$rel_uitbr_jaar)
-print(gem_maaibeheer-gem_nulbeheer)
-print((gem_maaibeheer - gem_nulbeheer)/gem_nulbeheer * 100) # percent increase
+print(gem_maaibeheer - gem_nulbeheer)
+print((gem_maaibeheer - gem_nulbeheer) / gem_nulbeheer * 100) # percent increase
 ```
 
 Tellen van vertegenwoordinging omgevingskenmerken
+
 ```{r tellen}
 groot_of_klein <- df %>% 
   tabyl(groot_of_klein) %>% 
@@ -234,10 +240,14 @@ begrensd <- df %>%
   print()
 
 ```
+
 We onderscheiden twee verschillende staalnamegroepen:
+
 Een groep die een nulbeheer kreeg en een groep die een maaibeheer kreeg.
 We vergelijken de gemiddelden van de jaarlijkse, relatieve uitbreiding van beide groepen.
+
 Onze nulhypothese: De gemiddelde jaarlijkse, relatieve uitbreiding van de gemaaide ruigtes verschilt niet van de gemiddelde, relatieve uitbreiding van de ruigtes met nulbeheer
+
 Onze alternateve hypothese: De gemiddeld jaarlijkse, relatieve uitbreiding van de gemaaide ruigtes is groter dan de gemiddelde, relatieve uitbreiding van de ruigtes met nulbeheer.
 
 
@@ -286,6 +296,7 @@ anova(fm1, fm2)
 ```
 
 Boxplot die het maaibeheer met nulbeheer vergelijkt
+
 ```{r Boxplot beheer}
 
 boxplot <- df %>%
@@ -294,7 +305,7 @@ boxplot <- df %>%
   ylab("Jaarlijkse relatieve oppervlakteverandering - logratio") +
  labs(fill = "Beheertype") +
   xlab("")
-  boxplot
+boxplot
 filename = paste("Boxplot_relatieve_oppervlakteverandering_ifv_beheer",
                  ".jpg", sep = "")
 ggsave(file = filename,
@@ -327,6 +338,7 @@ ggsave(file = filename,
 We berekenen een t-statistiek voor het verschil tussen de gemiddelden van de 
 staal met maaibeheer en de staal met nulbeheer. We berekenen een p-waarde van 
 0,43 > 0.05 en dus aanvaarden we de nulhypothese.
+
 ```{r handmatige t-statistiek}
 s_nulbeheer <- sd(df_nulbeheer$rel_uitbr_jaar)
 s_maaibeheer <- sd(df_maaibeheer$rel_uitbr_jaar)
@@ -372,6 +384,7 @@ t.test(
 ```
 
 Statistische test voor dataset met enkel onbegrensde haarden
+
 ```{r Statistiek onbegrensd}
 
 df_O <- df %>%
@@ -383,6 +396,7 @@ fm3 <- gls(rel_uitbr_jaar ~ 0 + beheer,
 anova(fm3)
 summary(fm3)
 ```
+
 We berekenen een t-statistiek voor het verschil tussen de gemiddelden van de 
 staal met maaibeheer en de staal met nulbeheer voor de dataset met onbegrensde haarden. We berekenen een p-waarde van 
 0,43 > 0.05 en dus aanvaarden we de nulhypothese.
@@ -410,6 +424,7 @@ p_value_df_O
 ```
 
 Het betrouwbaarheidsinterval voor onze test statistiek met de quantile-methode.
+
 ```{r 95% betrouwbaarheidsinterval}
 conf_int_quantile <- df %>%
   summarize(
