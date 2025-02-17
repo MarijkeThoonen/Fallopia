@@ -140,20 +140,94 @@ df2 <- df %>%
 m1 <- gls(
   logratio ~ log(opp_m2_18) + interval_jaar + beheer,
   weights = varIdent(form = ~ 1 | beheer),
-  data = df2)
+  data = df)
 
 
 plot(m1) # ziet er al veel beter uit
 summary(m1)
 anova(m1)
-marginaleffects::plot_predictions(m1, "beheer", transform = "exp") +
+marginaleffects::plot_predictions(
+  m1, condition = "beheer", trans = "exp"
+) +
+  geom_hline(yintercept = 1) +
+  scale_y_continuous(
+    labels = scales::percent,
+    transform = "log",
+    breaks = c(0.5, 0.75, 1, 1.25, 1.5, 2, 3)
+  )
+```
+  
 ```{r}
+library(marginaleffects)
 # interval_jaar is altijd 3 in df, dus is constante en mag weg
+m0 <- glmmTMB::glmmTMB(
+  opp_m2_2122/opp_m2_18 ~ log(opp_m2_18) * beheer,
+  dispformula = ~ beheer,
+  family = Gamma(link = "log"),
+  data = df)
+
+
+performance::check_residuals(m0) |> plot()
+summary(m0)
+car::Anova(m0)
+
+p0 <- predictions(
+  m0,
+  newdata = datagrid(
+    opp_m2_18 = c(1 , 2, 5, 10, 20, 50, 100, 150, 500, 1000),
+    beheer = c("nulbeheer", "maaibeheer")
+  ),
+  type = "link"
+) %>%
+  # verwijder combinaties die niet voorkomen in de dataset
+  filter(
+    !(beheer == "maaibeheer" & !between(opp_m2_18, 1, 150))
+  )
+
+p0 %>%
+  as_tibble() %>%
+  mutate(
+    ratio.est = exp(estimate) ^ (1/3),
+    ratio.lwr = exp(conf.low) ^ (1/3),
+    ratio.upr = exp(conf.high) ^ (1/3)
+  ) %>%
+  ggplot() +
+  geom_ribbon(
+    aes(
+      x = opp_m2_18,
+      y = ratio.est,
+      ymin = ratio.lwr,
+      ymax = ratio.upr,
+      fill = beheer
+    ),
+    alpha =  0.5
+  ) +
+  geom_line(
+    aes(
+      x = opp_m2_18,
+      y = ratio.est,
+      colour = beheer
+    )
+  ) +
+  geom_hline(yintercept = 1) +
+  scale_y_continuous(
+    "Jaarlijkse groeisnelheid (200% = x 2; 50% = x 1/2)",
+    breaks = c(1/2, 3/4, 1, 5/4, 3/2, 2, 3),
+    transform = "log",
+    labels = scales::percent
+  ) +
+  scale_x_log10(
+    "Initiële oppervlakte (m²)"
+  )
+
+
+
 # ipv logratio als response
 # voorspelling maken van opp in 2021/22 als functie van 
 # initiële opp in interactie met beheer
 # opp initieel log getransformeerd
 # want opp gemodelleerd via Gamma met log link
+# geeft net hetzelfde resultaat mits je het omrekent naar ratios
 m1 <- glmmTMB::glmmTMB(
   opp_m2_2122 ~ log(opp_m2_18) * beheer,
   dispformula = ~ beheer,
@@ -165,25 +239,18 @@ performance::check_residuals(m1) |> plot()
 summary(m1)
 car::Anova(m1)
 
-# we hermaken de figuur maar geven nu expliciet aan 
-# welke waarden constant gehouden moeten worden:
-
-nd <- data.frame(
-  opp_m2_18 = 100,
-  interval_jaar = 1,
-  beheer = c("nulbeheer", "maaibeheer")
-)
-
-library(marginaleffects)
 p1 <- predictions(
   m1,
   newdata = datagrid(
-    opp_m2_18 = c(1 , 5, 10, 50, 100, 500, 1000),
+    opp_m2_18 = c(1 , 2, 5, 10, 20, 50, 100, 150, 500, 1000),
     beheer = c("nulbeheer", "maaibeheer")
   ),
   type = "link"
-)
-
+) %>%
+  # verwijder combinaties die niet voorkomen in de dataset
+  filter(
+    !(beheer == "maaibeheer" & !between(opp_m2_18, 1, 150))
+  )
 
 p1 %>%
   as_tibble() %>%
@@ -193,15 +260,22 @@ p1 %>%
     ratio.upr = exp(conf.high - log(opp_m2_18)) ^ (1/3)
   ) %>%
   ggplot() +
-  geom_pointrange(
+  geom_ribbon(
     aes(
-      x = beheer,
+      x = opp_m2_18,
       y = ratio.est,
       ymin = ratio.lwr,
       ymax = ratio.upr,
-      colour = factor(opp_m2_18)
+      fill = beheer
     ),
-    position = position_dodge(width = 0.8)
+    alpha =  0.5
+  ) +
+  geom_line(
+    aes(
+      x = opp_m2_18,
+      y = ratio.est,
+      colour = beheer
+    )
   ) +
   geom_hline(yintercept = 1) +
   scale_y_continuous(
@@ -209,6 +283,9 @@ p1 %>%
     breaks = c(1/2, 3/4, 1, 5/4, 3/2, 2, 3),
     transform = "log",
     labels = scales::percent
+  ) +
+  scale_x_log10(
+    "Initiële oppervlakte (m²)"
   )
 
 ```
