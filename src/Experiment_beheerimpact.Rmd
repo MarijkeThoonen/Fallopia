@@ -60,33 +60,36 @@ df <- df %>%
          logratio_jaar = logratio/interval_jaar,
          categorie = as_factor(case_when(
            rel_uitbr_jaar < 0 ~ "krimp 0-5%",
-           rel_uitbr_jaar < 0.1 ~ "uitbr 0-10 %",
-           rel_uitbr_jaar < 0.2 ~ "uitbr 10-20 %",
-           rel_uitbr_jaar < 0.5 ~ "uitbr 20-50 %",
-           .default = "uitbr > 50 %"))) %>%
+           rel_uitbr_jaar < 0.1 ~ "uitbr 0-10%",
+           rel_uitbr_jaar < 0.2 ~ "uitbr 10-20%",
+           rel_uitbr_jaar < 0.5 ~ "uitbr 20-50%",
+           .default = "uitbr > 50%"))) %>%
   as_tibble()
          #rel_uitbr_jaar_pct = round(rel_uitbr_jaar_pct, 0))
 
 df$categorie <- factor(df$categorie, c(
   "krimp 0-5%",
-  "uitbr 0-10 %", 
-  "uitbr 10-20 %",
-  "uitbr 20-50 %", 
-  "uitbr > 50 %"))
+  "uitbr 0-10%", 
+  "uitbr 10-20%",
+  "uitbr 20-50%", 
+  "uitbr > 50%"))
 
 plot1 <- df %>% 
   ggplot(aes(x = categorie, fill = groot_of_klein)) +
   geom_bar(aes(y = after_stat(count / sum(count)*100))) +
   xlab("") +
   ylab("Aandeel ruigtes in percent")+
-  scale_y_continuous(breaks = seq(0, 100, 2))
+  scale_y_continuous(breaks = seq(0, 100, 5),
+                     labels = function(x) paste0(x, "%")) +
+  labs(fill = "groot of kein")
+                     
 plot1
-filename = paste("Categorieën uitbreiding",
+filenamfill_()filename = paste("Categorieën uitbreiding",
                  ".jpg", sep = "")
 ggsave(file = filename,
        path = "./plots",
        height = 6,
-       width = 6,
+       width = 8,
        dpi = 300)
 ```
 
@@ -227,7 +230,7 @@ p0 %>%
   ) +
   geom_hline(yintercept = 1) +
   scale_y_continuous(
-    "Jaarlijkse groeisnelheid (200% = x 2; 50% = x 1/2)",
+    "Jaarlijkse groeisnelheid",
     breaks = c(1/2, 3/4, 1, 5/4, 3/2, 2, 3),
     transform = "log",
     labels = scales::percent
@@ -258,12 +261,16 @@ p0 %>%
   ) +
   geom_hline(yintercept = 1) +
   scale_y_continuous(
-    "Jaarlijkse groeisnelheid (200% = x 2; 50% = x 1/2)",
+    "Jaarlijkse verandering oppervlakte",
     breaks = c(1/2, 3/4, 1, 5/4, 3/2, 2, 3),
     transform = "log",
     labels = scales::percent
-  )
-
+  ) +
+  labs(x = "Beginoppervlakte (m²)")
+ggsave(file = "2025_jaarlijkse_groeisnelheid_ifvbeheer_modeloutput.jpg",
+       width = 6,
+       height = 4,
+       dpi = 300)
 
 
 
